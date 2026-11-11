@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use pyrefly_python::sys_info::PythonVersion;
+
+use crate::test::util::TestEnv;
 use crate::testcase;
 
 // LateFutureImport: `from __future__ import` statements must appear at the beginning of the file,
@@ -227,5 +230,42 @@ testcase!(
     test_multiple_starred_expressions,
     r#"
 x, *y, *z = [1, 2, 3, 4]
+"#,
+);
+
+// Before Python 3.14, annotations of a generic function and the bases of a generic class are
+// evaluated in an annotation scope, where named expressions are not allowed.
+testcase!(
+    test_named_expression_in_generic_definition,
+    TestEnv::new_with_version(PythonVersion::new(3, 13, 0)),
+    r#"
+def f[T](x: (y := int)) -> None: ...  # E: named expression cannot be used within a generic definition
+def g[T]() -> (y := int): ...  # E: named expression cannot be used within a generic definition
+class A[T]((z := object)): ...  # E: named expression cannot be used within a generic definition  # E: Invalid expression form for base class
+def h[T: (x := int)](): ...  # E: named expression cannot be used within a TypeVar bound
+def i[T = (x := int)](): ...  # E: named expression cannot be used within a TypeVar default
+def ok(x: (y := int)) -> (z := int): ...
+"#,
+);
+
+// Starting with Python 3.14, all annotations are deferred, so named expressions are not allowed
+// in any annotation.
+testcase!(
+    test_named_expression_in_annotation_py314,
+    TestEnv::new_with_version(PythonVersion::new(3, 14, 0)),
+    r#"
+def f[T](x: (y := int)) -> None: ...  # E: named expression cannot be used within a type annotation
+def g(x: (y := int)) -> None: ...  # E: named expression cannot be used within a type annotation
+a: (b := int)  # E: named expression cannot be used within a type annotation
+"#,
+);
+
+testcase!(
+    test_named_expression_in_annotation_future_annotations,
+    TestEnv::new_with_version(PythonVersion::new(3, 13, 0)),
+    r#"
+from __future__ import annotations
+def f[T](x: (y := int)) -> None: ...  # E: named expression cannot be used within a type annotation
+def g(x: (y := int)) -> None: ...  # E: named expression cannot be used within a type annotation
 "#,
 );

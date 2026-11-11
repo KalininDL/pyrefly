@@ -48,6 +48,7 @@ use ruff_python_ast::StmtFunctionDef;
 use ruff_python_ast::TypeParam;
 use ruff_python_ast::TypeParams;
 use ruff_python_ast::name::Name;
+use ruff_python_parser::semantic_errors::InvalidExpressionKind;
 use ruff_python_parser::semantic_errors::LazyImportContext;
 use ruff_python_parser::semantic_errors::SemanticSyntaxChecker;
 use ruff_python_parser::semantic_errors::SemanticSyntaxContext;
@@ -1350,13 +1351,19 @@ impl Bindings {
             | SemanticSyntaxErrorKind::DuplicateMatchKey(_)
             | SemanticSyntaxErrorKind::DuplicateMatchClassAttribute(_)
             | SemanticSyntaxErrorKind::DuplicateTypeParameter
-            | SemanticSyntaxErrorKind::NonModuleImportStar(_) => true,
+            | SemanticSyntaxErrorKind::NonModuleImportStar(_)
+            | SemanticSyntaxErrorKind::InvalidExpression(InvalidExpressionKind::NamedExpr, _) => {
+                true
+            }
             // TODO: the following errors aren't being emitted even when enabled
             // we should investigate that
             SemanticSyntaxErrorKind::WriteToDebug(_)
             | SemanticSyntaxErrorKind::MultipleStarredExpressions
             // pyrefly already handles these errors - we should weigh the pros and cons of enabling them
-            | SemanticSyntaxErrorKind::InvalidExpression(_, _)
+            | SemanticSyntaxErrorKind::InvalidExpression(
+                InvalidExpressionKind::Yield | InvalidExpressionKind::Await,
+                _,
+            )
             | SemanticSyntaxErrorKind::FutureFeatureNotDefined(_)
             | SemanticSyntaxErrorKind::AsyncComprehensionInSyncComprehension(_)
             | SemanticSyntaxErrorKind::InvalidStarExpression

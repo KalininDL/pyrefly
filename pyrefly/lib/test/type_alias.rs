@@ -1138,9 +1138,9 @@ testcase!(
     r#"
 # Named expressions (walrus operator) are not allowed inside type aliases (PEP 695).
 # This matches Python's behavior which raises a SyntaxError.
-type T = (a := 1)  # E: Named expression cannot be used within a type alias # E: Expected `T` to be a type alias
-type U = (a := 1)  # E: Named expression cannot be used within a type alias # E: Expected `U` to be a type alias
-type V = int | (b := str)  # E: Named expression cannot be used within a type alias
+type T = (a := 1)  # E: named expression cannot be used within a type alias # E: Expected `T` to be a type alias
+type U = (a := 1)  # E: named expression cannot be used within a type alias # E: Expected `U` to be a type alias
+type V = int | (b := str)  # E: named expression cannot be used within a type alias
     "#,
 );
 
