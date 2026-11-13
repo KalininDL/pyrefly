@@ -1095,7 +1095,6 @@ class Foo:
 
 // A final method cannot be overridden, so an abstract one could never be implemented.
 testcase!(
-    bug = "A method that is both `@final` and `@abstractmethod` should be reported",
     test_abstract_and_final_method,
     r#"
 from abc import ABC, abstractmethod
@@ -1104,10 +1103,10 @@ from typing import final
 class C(ABC):
     @final
     @abstractmethod
-    def m(self) -> None: ...
+    def m(self) -> None: ...  # E: `C.m` cannot be both `@abstractmethod` and `@final`
     @abstractmethod
     @final
-    def n(self) -> None: ...
+    def n(self) -> None: ...  # E: `C.n` cannot be both `@abstractmethod` and `@final`
     @final
     def ok_final(self) -> None: ...
     @abstractmethod
