@@ -1925,6 +1925,19 @@ y = 10  # E: Cannot assign to `y` because it is imported as final
 );
 
 testcase!(
+    bug = "Each assignment to a `Final` name through its module should be reported",
+    test_modify_final_value_through_module,
+    env_final_value(),
+    r#"
+import foo
+import foo as f
+foo.Y = 10
+f.Y = 10
+foo.Y += 1
+"#,
+);
+
+testcase!(
     test_duplicate_import_of_final_value,
     env_final_value(),
     r#"
