@@ -447,6 +447,47 @@ class C:
 "#,
 );
 
+// A loop body runs more than once, so a `Final` declared in it would be assigned repeatedly.
+testcase!(
+    bug = "Each `Final` declared in a loop body should be reported",
+    test_final_in_loop,
+    r#"
+import typing
+from typing import Final
+
+def cond() -> bool: ...
+
+for i in range(3):
+    x: Final[int] = 1
+while cond():
+    y: typing.Final = "1"
+def f() -> None:
+    for i in range(3):
+        z: Final[int] = 1
+class A:
+    def __init__(self) -> None:
+        for i in range(3):
+            self.a: Final = i
+for j in range(3):
+    q: "Final[int]" = 1
+"#,
+);
+
+testcase!(
+    test_final_not_in_loop_body,
+    r#"
+from typing import Final
+
+for i in range(3):
+    def f() -> None:
+        x: Final = 1
+    class C:
+        y: Final = 1
+else:
+    z: Final = 1
+"#,
+);
+
 testcase!(
     test_final_alternate_init_forms_no_error,
     r#"
