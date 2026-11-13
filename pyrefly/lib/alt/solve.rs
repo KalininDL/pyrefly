@@ -3131,9 +3131,30 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
             } => {
                 let ann_new = self.get_idx(*new);
                 let ann_existing = self.get_idx(*existing);
+                // The assignment checks a method's annotation of a class-body attribute.
+                let compare_types = !matches!(
+                    (&ann_new.target, &ann_existing.target),
+                    (
+                        AnnotationTarget::AttrAssign(_),
+                        AnnotationTarget::ClassMember(_)
+                    )
+                );
+                // The first annotation of a name is checked against itself.
+                if new != existing
+                    && ann_new.annotation.is_final()
+                    && ann_existing.annotation.is_final()
+                {
+                    self.error(
+                        errors,
+                        self.bindings().idx_to_key(*new).range(),
+                        ErrorKind::Redefinition,
+                        format!("`{name}` is already declared as `Final`"),
+                    );
+                }
                 // Deferred alias references retain their defining identity. Compare annotations
                 // containing them with the solver's recursive equivalence check instead.
-                if let Some(t_new) = ann_new.ty(self.heap, self.stdlib)
+                else if compare_types
+                    && let Some(t_new) = ann_new.ty(self.heap, self.stdlib)
                     && let Some(t_existing) = ann_existing.ty(self.heap, self.stdlib)
                     && t_new != t_existing
                     && !((t_new.any(|ty| matches!(ty, Type::UntypedAlias(_)))
