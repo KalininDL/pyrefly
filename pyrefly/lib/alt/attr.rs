@@ -1238,6 +1238,23 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                         context,
                     ));
                 }
+                Attribute::Simple(_)
+                    if let AttributeBase1::Module(module) = &found_on
+                        && let module_name = ModuleName::from_parts(module.parts())
+                        && self.exports.export_origin(module_name, attr_name).is_final =>
+                {
+                    errors
+                        .error_builder(
+                            range,
+                            ErrorKind::BadAssignment,
+                            format!(
+                                "Cannot assign to `{attr_name}` because it is final in module `{module_name}`"
+                            ),
+                        )
+                        .with_context(context)
+                        .emit();
+                    setters.push(None);
+                }
                 Attribute::Simple(attr_ty) => {
                     setters.push(Some(AttrSetter::Declared {
                         ty: attr_ty,
