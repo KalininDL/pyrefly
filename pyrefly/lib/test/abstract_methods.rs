@@ -1092,3 +1092,24 @@ class Foo:
         ...
 "#,
 );
+
+testcase!(
+    bug = "A method that is both `@final` and `@abstractmethod` should be reported",
+    test_abstract_and_final_method,
+    r#"
+from abc import ABC, abstractmethod
+from typing import final
+
+class C(ABC):
+    @final
+    @abstractmethod
+    def m(self) -> None: ...
+    @abstractmethod
+    @final
+    def n(self) -> None: ...
+    @final
+    def ok_final(self) -> None: ...
+    @abstractmethod
+    def ok_abstract(self) -> None: ...
+"#,
+);
