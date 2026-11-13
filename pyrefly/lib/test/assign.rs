@@ -474,21 +474,20 @@ for j in range(3):
 
 // The typing spec allows at most one `Final` declaration of a name in a module or class.
 testcase!(
-    bug = "A second `Final` declaration of a name should be reported",
     test_final_redeclared,
     r#"
 import typing
 from typing import Final
 
 m: Final = 1
-m: Final = 2
+m: Final = 2  # E: `m` is already declared as `Final`
 
 class A:
     a: Final[int]
     b: typing.Final[int]
     def __init__(self) -> None:
-        self.a: Final[int] = 2
-        self.b: "Final[int]" = 2
+        self.a: Final[int] = 2  # E: `a` is already declared as `Final`
+        self.b: "Final[int]" = 2  # E: `b` is already declared as `Final`
 "#,
 );
 
