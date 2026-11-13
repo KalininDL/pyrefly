@@ -449,7 +449,6 @@ class C:
 
 // A loop body runs more than once, so a `Final` declared in it would be assigned repeatedly.
 testcase!(
-    bug = "Each `Final` declared in a loop body should be reported",
     test_final_in_loop,
     r#"
 import typing
@@ -458,18 +457,18 @@ from typing import Final
 def cond() -> bool: ...
 
 for i in range(3):
-    x: Final[int] = 1
+    x: Final[int] = 1  # E: `Final` cannot be used inside a loop
 while cond():
-    y: typing.Final = "1"
+    y: typing.Final = "1"  # E: `Final` cannot be used inside a loop
 def f() -> None:
     for i in range(3):
-        z: Final[int] = 1
+        z: Final[int] = 1  # E: `Final` cannot be used inside a loop
 class A:
     def __init__(self) -> None:
         for i in range(3):
-            self.a: Final = i
+            self.a: Final = i  # E: `Final` cannot be used inside a loop
 for j in range(3):
-    q: "Final[int]" = 1
+    q: "Final[int]" = 1  # E: `Final` cannot be used inside a loop
 "#,
 );
 
