@@ -4040,6 +4040,7 @@ impl Scopes {
                     existing_initialized.or(initialized);
                 } else if let Some((
                     ClassFieldDefinition::DeclaredByAnnotation {
+                        annotation: existing_ann,
                         initialized_in_method,
                         ..
                     },
@@ -4047,6 +4048,9 @@ impl Scopes {
                     existing_initialized,
                 )) = field_definitions.get_mut(name.key())
                 {
+                    if let Some(new_ann) = annotation {
+                        redefinitions.push((name.key().clone(), new_ann, *existing_ann));
+                    }
                     // Methods initialize a bare class-body annotation without changing its definition.
                     *initialized_in_method |= has_value;
                     existing_initialized.or(initialized);
