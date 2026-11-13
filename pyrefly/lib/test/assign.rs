@@ -472,6 +472,56 @@ for j in range(3):
 "#,
 );
 
+// The typing spec allows at most one `Final` declaration of a name in a module or class.
+testcase!(
+    bug = "A second `Final` declaration of a name should be reported",
+    test_final_redeclared,
+    r#"
+import typing
+from typing import Final
+
+m: Final = 1
+m: Final = 2
+
+class A:
+    a: Final[int]
+    b: typing.Final[int]
+    def __init__(self) -> None:
+        self.a: Final[int] = 2
+        self.b: "Final[int]" = 2
+"#,
+);
+
+testcase!(
+    bug = "The second `Final` annotation of `self.b` in `__init__` should be reported",
+    test_final_redeclared_in_same_method,
+    r#"
+from typing import Final
+
+class B:
+    def __init__(self) -> None:
+        self.b: Final[int] = 1
+        self.b: Final[int] = 2
+"#,
+);
+
+testcase!(
+    test_final_declared_once,
+    r#"
+from typing import Final
+
+class A:
+    a: Final[int]
+    def __init__(self) -> None:
+        self.a: int = 1
+
+class B:
+    b: Final[int]
+    def __init__(self) -> None:
+        self.b = 1
+"#,
+);
+
 testcase!(
     test_final_not_in_loop_body,
     r#"
