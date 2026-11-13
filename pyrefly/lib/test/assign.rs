@@ -492,7 +492,6 @@ class A:
 );
 
 testcase!(
-    bug = "The second `Final` annotation of `self.b` in `__init__` should be reported",
     test_final_redeclared_in_same_method,
     r#"
 from typing import Final
@@ -500,7 +499,7 @@ from typing import Final
 class B:
     def __init__(self) -> None:
         self.b: Final[int] = 1
-        self.b: Final[int] = 2
+        self.b: Final[int] = 2  # E: Cannot set field `b`
 "#,
 );
 
