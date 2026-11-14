@@ -419,6 +419,42 @@ z: Final = 1  # OK
 );
 
 testcase!(
+    bug = "A second `Final` declaration of a name should be reported",
+    test_final_redeclared,
+    r#"
+import typing
+from typing import Final
+
+m: Final = 1
+m: Final = 2
+
+class A:
+    a: Final[int]
+    b: typing.Final[int]
+    def __init__(self) -> None:
+        self.a: Final[int] = 2
+        self.b: "Final[int]" = 2
+"#,
+);
+
+testcase!(
+    test_final_declared_once,
+    r#"
+from typing import Final
+
+class A:
+    a: Final[int]
+    def __init__(self) -> None:
+        self.a: int = 1
+
+class B:
+    b: Final[int]
+    def __init__(self) -> None:
+        self.b = 1
+"#,
+);
+
+testcase!(
     test_final_stub_no_error,
     TestEnv::one_with_path(
         "stub",
