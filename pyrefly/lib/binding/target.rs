@@ -211,7 +211,8 @@ impl<'a> BindingsBuilder<'a> {
                 .is_some_and(|method| {
                     method.recognized_attribute_defining_method
                         && matches!(method.instance_or_class, MethodSelfKind::Instance)
-                });
+                })
+                && !self.scopes.is_attr_initialized_in_method(&attr);
         // Updating a function's docstring does not retain its instance-callable view.
         // Only the direct store base is exempt; assignment RHS captures still count.
         let metadata_write = self.track_classmethod_uses
@@ -233,7 +234,9 @@ impl<'a> BindingsBuilder<'a> {
             Binding::AssignToAttribute(Box::new(AssignToAttribute {
                 attr,
                 value: Box::new(value.clone()),
-                allow_assign_to_final,
+                // An augmented assignment reads the attribute first, so it never initializes it.
+                allow_assign_to_final: allow_assign_to_final
+                    && !matches!(value, ExprOrBinding::Binding(Binding::AugAssign(..))),
             })),
         );
         if let Some(identifier) = narrowing_identifier {

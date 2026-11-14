@@ -2761,6 +2761,30 @@ impl Scopes {
         None
     }
 
+    /// Whether the attribute `x` is initialized on every path through its method to this point.
+    /// A function nested in the method may run at any point, so the method's flow does not apply.
+    pub fn is_attr_initialized_in_method(&self, x: &ExprAttribute) -> bool {
+        let Expr::Name(receiver) = &*x.value else {
+            return false;
+        };
+        let Some((method_idx, _)) = self.find_receiver_method_index(&receiver.id) else {
+            return false;
+        };
+        let in_nested_function = self.scopes.iter().skip(method_idx + 1).any(|node| {
+            matches!(
+                node.scope.kind,
+                ScopeKind::Function(_) | ScopeKind::Method(_)
+            )
+        });
+        !in_nested_function
+            && self.scopes[method_idx]
+                .scope
+                .flow
+                .instance_attribute_initialization
+                .get(&x.attr.id)
+                == Some(&InitializationStatus::Initialized)
+    }
+
     pub fn loop_depth(&self) -> usize {
         self.current().loops.len()
     }

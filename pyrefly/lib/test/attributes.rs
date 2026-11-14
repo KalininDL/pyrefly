@@ -1905,7 +1905,6 @@ def f(a: A):
 );
 
 testcase!(
-    bug = "Each assignment after a `Final` attribute is initialized should be reported",
     test_final_attribute_reassigned_in_init,
     r#"
 from typing import Final
@@ -1913,24 +1912,24 @@ from typing import Final
 class A:
     def __init__(self) -> None:
         self.a: Final[int] = 1
-        self.a += 1
-        self.a = 2
+        self.a += 1  # E: Cannot set field `a`
+        self.a = 2  # E: Cannot set field `a`
 
 class B:
     b: Final[int]
     def __init__(self) -> None:
         self.b = 1
-        self.b += 1
+        self.b += 1  # E: Cannot set field `b`
 
 class C(B):
     def __init__(self) -> None:
         super().__init__()
-        self.b += 4
+        self.b += 4  # E: Cannot set field `b`
 
 class E:
     def __init__(self) -> None:
         self.e: Final[int] = 1
-        self.e: Final[int] = 2
+        self.e: Final[int] = 2  # E: Cannot set field `e`
 "#,
 );
 
