@@ -2876,6 +2876,8 @@ pub enum Binding {
     /// Resolves to `Never` when control cannot leave the suite normally: either its test makes
     /// it dead, or its `last` termination key is `Never`. Resolves to `None` otherwise.
     BranchEnd(Box<BranchEnd>),
+    /// Whether the module mutates a `functools` wrapper, solved as a `bool` literal.
+    FunctoolsWrapperMutation(bool),
     Sentinel(
         Box<(
             Option<Idx<KeyAnnotation>>,
@@ -2931,6 +2933,7 @@ impl DisplayWith<Bindings> for Binding {
                 let (a, name, _, call) = x.as_ref();
                 write!(f, "sentinel({}, {name}, {})", ann(a), m.display(call))
             }
+            Self::FunctoolsWrapperMutation(b) => write!(f, "FunctoolsWrapperMutation({b})"),
             Self::ReturnExplicit(x) => {
                 write!(f, "ReturnExplicit({}, ", ann(&x.annot))?;
                 match &x.expr {
@@ -3343,7 +3346,8 @@ impl Binding {
             | Binding::ExceptionClass(_, _)
             | Binding::SuppressedException(_)
             | Binding::BranchTest(_)
-            | Binding::BranchEnd(_) => None,
+            | Binding::BranchEnd(_)
+            | Binding::FunctoolsWrapperMutation(_) => None,
         }
     }
 }

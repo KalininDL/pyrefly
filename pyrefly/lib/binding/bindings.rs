@@ -36,10 +36,8 @@ use pyrefly_util::gas::Gas;
 use pyrefly_util::suggest::Candidate;
 use pyrefly_util::suggest::Search;
 use pyrefly_util::visit::Visit;
-use ruff_python_ast::AtomicNodeIndex;
 use ruff_python_ast::Expr;
 use ruff_python_ast::ExprAttribute;
-use ruff_python_ast::ExprBooleanLiteral;
 use ruff_python_ast::ExprName;
 use ruff_python_ast::Identifier;
 use ruff_python_ast::ModModule;
@@ -657,25 +655,6 @@ fn ranges_contain(ranges: &[TextRange], range: TextRange) -> bool {
     idx > 0 && ranges[idx - 1].contains_range(range)
 }
 
-/// Bind a constant summary so adding or removing a mutator invalidates dependent unwrap answers.
-fn bind_functools_wrapper_mutation(
-    table: &mut BindingTable,
-    range: TextRange,
-    has_mutation: bool,
-) -> Idx<Key> {
-    table.insert(
-        Key::FunctoolsWrapperMutation(range),
-        Binding::Expr(
-            None,
-            Box::new(Expr::BooleanLiteral(ExprBooleanLiteral {
-                node_index: AtomicNodeIndex::default(),
-                range,
-                value: has_mutation,
-            })),
-        ),
-    )
-}
-
 impl Bindings {
     #[expect(dead_code)] // Useful API
     fn len(&self) -> usize {
@@ -1107,7 +1086,6 @@ impl Bindings {
         infer_param_types_from_docstring: bool,
         use_shape_comments_and_stubs: bool,
     ) -> Self {
-        let module_range = x.range;
         let dunder_all_entries = exports
             .dunder_all_names()
             .filter_map(|(_, name, content_range)| {
@@ -1282,10 +1260,9 @@ impl Bindings {
             }
         }
         let module_deletes = scope_trace.module_deletes().clone();
-        let functools_wrapper_mutation = bind_functools_wrapper_mutation(
-            &mut builder.table,
-            module_range,
-            builder.has_functools_wrapper_mutation,
+        let functools_wrapper_mutation = builder.table.insert(
+            Key::FunctoolsWrapperMutation(TextRange::default()),
+            Binding::FunctoolsWrapperMutation(builder.has_functools_wrapper_mutation),
         );
         builder.table.insert(
             KeyDjangoRelations,
