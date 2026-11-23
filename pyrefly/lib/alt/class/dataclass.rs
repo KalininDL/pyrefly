@@ -875,13 +875,22 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
             && ((map.is_set(effective_alias_keyword)
                 && map.get_string(effective_alias_keyword).is_none())
                 || args.keywords.iter().any(|kw| kw.arg.is_none()));
-        let mut alias = if dataclass_metadata.init_defaults.init_by_alias {
-            map.get_string(alias_keyword)
-                .or_else(|| map.get_string(&DataclassFieldKeywords::ALIAS))
-                .map(Name::new)
+        let pydantic_alias_keys = if alias_keyword == &VALIDATION_ALIAS
+            && dataclass_metadata.init_defaults.init_by_alias
+            && let Some(kw) = args.find_keyword(alias_keyword.as_str())
+        {
+            self.pydantic_alias_keys(&kw.value).unwrap_or_default()
         } else {
-            None
+            Vec::new()
         };
+        let mut alias =
+            if dataclass_metadata.init_defaults.init_by_alias && pydantic_alias_keys.is_empty() {
+                map.get_string(alias_keyword)
+                    .or_else(|| map.get_string(&DataclassFieldKeywords::ALIAS))
+                    .map(Name::new)
+            } else {
+                None
+            };
 
         let gt = map.0.get(&GT).cloned();
         let lt = map.0.get(&LT).cloned();
@@ -931,7 +940,7 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                 &mut alias,
             );
         }
-        if alias.is_none() {
+        if alias.is_none() && pydantic_alias_keys.is_empty() {
             alias = dataclass_metadata
                 .init_defaults
                 .alias_generator
@@ -942,9 +951,11 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
             init: init.unwrap_or(true),
             default,
             kw_only,
-            init_by_name: dataclass_metadata.init_defaults.init_by_name || alias.is_none(),
+            init_by_name: dataclass_metadata.init_defaults.init_by_name
+                || (alias.is_none() && pydantic_alias_keys.is_empty()),
             init_by_alias: alias,
             pydantic_unknown_validation_alias,
+            pydantic_alias_keys,
             pydantic_unchecked_metadata: false,
             lt,
             gt,
@@ -1230,6 +1241,7 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                 (DataclassMember::Field(field, mut keywords), _)
                 | (DataclassMember::InitVar(field, mut keywords), true) => {
                     if keywords.init_by_alias.is_none()
+                        && keywords.pydantic_alias_keys.is_empty()
                         && let Some(generator) = dataclass.init_defaults.alias_generator.as_ref()
                     {
                         keywords.init_by_alias = Some(Name::new(generator.generate(name.as_str())));
@@ -1284,8 +1296,7 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
             if !flags.init || flags.is_kw_only() {
                 continue;
             }
-            let has_default =
-                flags.default.is_some() || (flags.init_by_name && flags.init_by_alias.is_some());
+            let has_default = flags.default.is_some() || flags.init_by_name_and_alias();
             if &n == name {
                 return !has_default && has_seen_default;
             }
@@ -1331,12 +1342,15 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
         );
         let mut params = vec![self_param];
         let mut has_seen_default = false;
+        // Several fields may read from the same Pydantic alias key. Maps each key to whether it is
+        // required.
+        let mut pydantic_alias_keys: SmallMap<Name, bool> = SmallMap::new();
         for (name, field, field_flags) in self.iter_fields(cls, dataclass, true, kw_only_by_class) {
             let strict = field_flags.strict.unwrap_or(strict_default);
             if field_flags.init || init_arg_should_be_ignored {
                 let has_default = force_optional
                     || field_flags.default.is_some()
-                    || (field_flags.init_by_name && field_flags.init_by_alias.is_some());
+                    || field_flags.init_by_name_and_alias();
                 let is_kw_only = field_flags.is_kw_only();
                 if !is_kw_only {
                     if !has_default && has_seen_default {
@@ -1436,6 +1450,26 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                         param_type_transform,
                     ));
                 }
+                // A key is required only when it is the field's sole input.
+                let key_required = !has_default && field_flags.pydantic_alias_keys.len() == 1;
+                for key in &field_flags.pydantic_alias_keys {
+                    *pydantic_alias_keys.entry(key.clone()).or_default() |= key_required;
+                }
+            }
+        }
+        // A key may hold a container that a path reads the field's value from, so it accepts any
+        // type. A field's own parameter takes precedence over a key with the same name.
+        for (key, required) in pydantic_alias_keys {
+            if params.iter().all(|param| param.name() != Some(&key)) {
+                params.push(Param::KwOnly(
+                    key,
+                    self.heap.mk_any_explicit(),
+                    if required {
+                        Required::Required
+                    } else {
+                        Required::Optional(None)
+                    },
+                ));
             }
         }
         if dataclass.kws.extra {

@@ -918,6 +918,37 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
         }
     }
 
+    /// The input keys that a validation alias built from `AliasPath` and `AliasChoices` reads.
+    /// Returns `None` if the alias has another form or a key is not a string literal.
+    pub fn pydantic_alias_keys(&self, alias: &Expr) -> Option<Vec<Name>> {
+        let ignore_errors = self.error_swallower();
+        let is_instance_of =
+            |expr: &Expr, class: KnownClass| match self.expr_infer(expr, &ignore_errors) {
+                Type::ClassType(cls) => cls.is(class),
+                _ => false,
+            };
+        let string_key = |expr: &Expr| {
+            expr.as_string_literal_expr()
+                .map(|key| Name::new(key.value.to_str()))
+        };
+        // A path reads the key named by its first element.
+        let path_key = |expr: &Expr| match expr {
+            Expr::Call(call) if is_instance_of(expr, KnownClass::PydanticAliasPath) => {
+                string_key(call.arguments.args.first()?)
+            }
+            _ => None,
+        };
+        match alias {
+            Expr::Call(call) if is_instance_of(alias, KnownClass::PydanticAliasChoices) => call
+                .arguments
+                .args
+                .iter()
+                .map(|choice| string_key(choice).or_else(|| path_key(choice)))
+                .collect(),
+            _ => Some(vec![path_key(alias)?]),
+        }
+    }
+
     /// Extract Pydantic Field metadata from an annotation binding.
     /// This handles the Pydantic-specific pattern where fields can be declared as:
     /// `field: Annotated[some_type, Field(some_keyword=<value>)]`

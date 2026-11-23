@@ -171,6 +171,9 @@ pub struct DataclassFieldKeywords {
     pub init_by_alias: Option<Name>,
     /// A Pydantic validation alias was supplied but is not a known string.
     pub pydantic_unknown_validation_alias: bool,
+    /// The input keys of a Pydantic `AliasPath` or `AliasChoices` validation alias. The field reads
+    /// its value from these keys instead of from its name or alias.
+    pub pydantic_alias_keys: Vec<Name>,
     /// Unmodeled Pydantic annotation metadata may change how raw input is validated.
     pub pydantic_unchecked_metadata: bool,
     /// gt and lt specify the range of values that the field can take. None means no constraint
@@ -216,6 +219,7 @@ impl DataclassFieldKeywords {
             init_by_name: true,
             init_by_alias: None,
             pydantic_unknown_validation_alias: false,
+            pydantic_alias_keys: Vec::new(),
             pydantic_unchecked_metadata: false,
             lt: None,
             gt: None,
@@ -231,6 +235,12 @@ impl DataclassFieldKeywords {
 
     pub fn is_kw_only(&self) -> bool {
         self.kw_only == Some(true)
+    }
+
+    /// Whether the field accepts input both by name and through an alias, so that neither
+    /// `__init__` parameter is required on its own.
+    pub fn init_by_name_and_alias(&self) -> bool {
+        self.init_by_name && (self.init_by_alias.is_some() || !self.pydantic_alias_keys.is_empty())
     }
 }
 

@@ -203,6 +203,8 @@ known_classes! {
     PolarsLazyFrame => ("polars.lazyframe.frame", "LazyFrame"),
     PolarsSchema => ("polars.schema", "Schema"),
     PolarsSeries => ("polars.series.series", "Series"),
+    PydanticAliasChoices => ("pydantic.aliases", "AliasChoices"),
+    PydanticAliasPath => ("pydantic.aliases", "AliasPath"),
     PydanticBaseModel => ("pydantic.main", "BaseModel"),
     PydanticRootModel => ("pydantic.root_model", "RootModel"),
     PydanticStrict => ("pydantic.types", "Strict"),
