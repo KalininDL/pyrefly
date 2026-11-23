@@ -20,7 +20,6 @@ pub fn pydantic_env() -> TestEnv {
         "typing_inspection",
         "typing_inspection.*",
         "pydantic._migration",
-        "pydantic.aliases",
         "pydantic.errors",
         "pydantic.warnings",
         "pydantic._internal._generate_schema",

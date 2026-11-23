@@ -338,3 +338,88 @@ Model3(y="123") # E: Missing argument `x` in function `Model3.__init__`
 Model3(x="123")
     "#,
 );
+
+pydantic_testcase!(
+    test_validation_alias_path,
+    r#"
+from pydantic import AliasPath, BaseModel, Field
+
+class Model(BaseModel):
+    a: int = Field(validation_alias=AliasPath("b", "c"))
+    label: str
+
+Model(b={"c": 1}, label="x")
+Model(a=1, label="x")  # E: Missing argument `b` in function `Model.__init__`
+Model(b={"c": 1})  # E: Missing argument `label` in function `Model.__init__`
+
+class Default(BaseModel):
+    a: int = Field(default=1, validation_alias=AliasPath("b", "c"))
+
+Default()
+
+class Shared(BaseModel):
+    a: int = Field(validation_alias=AliasPath("b", "c"))
+    other: str = Field(validation_alias=AliasPath("b", "other"))
+
+Shared(b={"c": 1, "other": "v"})
+"#,
+);
+
+pydantic_testcase!(
+    test_validation_alias_path_by_name,
+    r#"
+from pydantic import AliasPath, BaseModel, Field
+
+class ByName(BaseModel, validate_by_name=True):
+    a: int = Field(validation_alias=AliasPath("b", "c"))
+
+ByName(a=1)
+ByName(b={"c": 1})
+
+class NoAlias(BaseModel, validate_by_alias=False, validate_by_name=True):
+    a: int = Field(validation_alias=AliasPath("b", "c"))
+
+NoAlias(a=1)
+NoAlias()  # E: Missing argument `a` in function `NoAlias.__init__`
+"#,
+);
+
+pydantic_testcase!(
+    test_validation_alias_path_overrides_alias,
+    r#"
+from pydantic import AliasPath, BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
+
+class Explicit(BaseModel):
+    a: int = Field(alias="other", validation_alias=AliasPath("b", "c"))
+
+Explicit(b={"c": 1})
+Explicit(other=1)  # E: Missing argument `b` in function `Explicit.__init__`
+
+class Generated(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel)
+    some_value: int = Field(validation_alias=AliasPath("b", "c"))
+
+Generated(b={"c": 1})
+Generated(someValue=1)  # E: Missing argument `b` in function `Generated.__init__`
+"#,
+);
+
+pydantic_testcase!(
+    test_validation_alias_choices,
+    r#"
+from pydantic import AliasChoices, AliasPath, BaseModel, Field
+
+class Model(BaseModel):
+    a: int = Field(validation_alias=AliasChoices(AliasPath("b", "c"), "d"))
+
+Model(b={"c": 1})
+Model(d=1)
+
+def make(alias: str) -> None:
+    class Unknown(BaseModel):
+        a: int = Field(validation_alias=AliasChoices(AliasPath("b", "c"), alias))
+
+    Unknown(a=1)
+"#,
+);
