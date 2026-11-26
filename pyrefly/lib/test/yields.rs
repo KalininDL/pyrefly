@@ -39,7 +39,6 @@ assert_type(gen_with_return(), Generator[Literal[1, 2], Any, Literal['done']])
 
 // https://github.com/pyrefly-org/pyrefly/issues/5758
 testcase!(
-    bug = "Iteration can resume a generator whose send type excludes None",
     test_generator_iteration_requires_accepting_none,
     r#"
 from collections.abc import Generator
@@ -52,9 +51,9 @@ def consume(
     accepts_object: Generator[int, object],
     gradual: Generator[int, Any],
 ):
-    for x in requires_str:
+    for x in requires_str:  # E: send type `str` does not accept `None`
         assert_type(x, int)
-    assert_type([x for x in requires_str], list[int])
+    assert_type([x for x in requires_str], list[int])  # E: send type `str` does not accept `None`
     for safe in (accepts_none, accepts_optional, accepts_object, gradual):
         for x in safe:
             assert_type(x, int)

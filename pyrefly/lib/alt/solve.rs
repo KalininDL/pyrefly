@@ -1249,6 +1249,23 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                 vec![iterable]
             }
             _ => {
+                if let Type::ClassType(cls) | Type::SelfType(cls) = iterable
+                    && let Some(generator) = self.as_superclass(cls, self.stdlib.generator_object())
+                    && let [_, send_ty, _] = generator.targs().as_slice()
+                    && !self.is_subset_eq(&Type::None, send_ty)
+                {
+                    // Iteration resumes the generator with `None`, not an explicit send value.
+                    self.error(
+                        errors,
+                        range,
+                        ErrorKind::NotIterable,
+                        format!(
+                            "Cannot iterate over `{}` because its send type `{}` does not accept `None`",
+                            self.display(iterable.clone()),
+                            self.display(send_ty.clone()),
+                        ),
+                    );
+                }
                 let ty = self
                     .unwrap_iterable(iterable)
                     .or_else(|| {

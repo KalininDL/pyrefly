@@ -563,6 +563,10 @@ impl Stdlib {
         Self::apply(&self.generator, vec![yield_ty, send_ty, return_ty])
     }
 
+    pub fn generator_object(&self) -> &Class {
+        &Self::unwrap(&self.generator).0
+    }
+
     pub fn async_generator(&self, yield_ty: Type, send_ty: Type) -> ClassType {
         Self::apply(&self.async_generator, vec![yield_ty, send_ty])
     }
