@@ -788,6 +788,41 @@ async def f2() -> A | AsyncGenerator[A]:
 
 // https://github.com/pyrefly-org/pyrefly/issues/5757
 testcase!(
+    bug = "Delegating generators retain an unknown send type",
+    test_delegating_generator_send_type,
+    r#"
+from collections.abc import Generator, Iterator
+from typing import assert_type, reveal_type
+
+def delegate() -> Generator[int, str | None]:
+    sent = yield 1
+    assert_type(sent, str | None)
+
+def wrapper():
+    yield from delegate()
+
+reveal_type(wrapper())  # E: revealed type: Generator[int, Unknown]
+
+def nested(depth: int):
+    yield depth
+    if depth:
+        yield from nested(depth - 1)
+
+reveal_type(nested(2))  # E: revealed type: Generator[int, Unknown]
+
+def consume() -> Iterator[int]:
+    yield from nested(2)
+
+# The explicit send type is checked against the delegate and is not inferred.
+def annotated() -> Generator[int, str | None]:
+    yield from delegate()
+
+assert_type(annotated(), Generator[int, str | None])
+"#,
+);
+
+// https://github.com/pyrefly-org/pyrefly/issues/5757
+testcase!(
     test_inferred_generator_send_type_and_contextmanager,
     TestEnv::new()
         .enable_unknown_variable_type_error()
