@@ -4071,7 +4071,11 @@ impl BindingLegacyTypeParam {
 
 #[derive(Clone, Debug)]
 pub enum BindingYield {
-    Yield(Option<Idx<KeyAnnotation>>, ExprYield),
+    Yield {
+        annot: Option<Idx<KeyAnnotation>>,
+        infer_send: bool,
+        expr: ExprYield,
+    },
     Invalid(ExprYield),
     Unreachable(ExprYield),
 }
@@ -4079,7 +4083,7 @@ pub enum BindingYield {
 impl BindingYield {
     fn expr(&self) -> &ExprYield {
         match self {
-            Self::Yield(_, x) => x,
+            Self::Yield { expr, .. } => expr,
             Self::Invalid(x) => x,
             Self::Unreachable(x) => x,
         }

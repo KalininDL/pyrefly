@@ -647,7 +647,11 @@ impl<'a> BindingsBuilder<'a> {
                 if is_unreachable {
                     BindingYield::Unreachable(y)
                 } else {
-                    BindingYield::Yield(None, y)
+                    BindingYield::Yield {
+                        annot: None,
+                        infer_send: false,
+                        expr: y,
+                    }
                 },
             );
         }

@@ -4978,16 +4978,19 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                             .map(|idx| self.get_idx(*idx).yield_ty.clone());
                         yield_tys.chain(yield_from_tys).collect()
                     });
-                    let any_implicit = self.heap.mk_any_implicit();
+                    // Do not infer a send type across delegation. A recursive delegate can
+                    // initially appear to accept only `Never` during SCC solving.
+                    let send_ty = if yield_froms.is_empty() {
+                        self.default_generator_send_type()
+                    } else {
+                        self.heap.mk_any_implicit()
+                    };
                     if x.is_async {
                         self.heap
-                            .mk_class_type(self.stdlib.async_generator(yield_ty, any_implicit))
+                            .mk_class_type(self.stdlib.async_generator(yield_ty, send_ty))
                     } else {
-                        self.heap.mk_class_type(self.stdlib.generator(
-                            yield_ty,
-                            any_implicit,
-                            return_ty,
-                        ))
+                        self.heap
+                            .mk_class_type(self.stdlib.generator(yield_ty, send_ty, return_ty))
                     }
                 } else if x.is_async {
                     // As in `return_type_from_annotation`, the coroutine's `Any`s are explicit.
@@ -7806,9 +7809,17 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
         )
     }
 
+    fn default_generator_send_type(&self) -> Type {
+        self.heap.mk_class_type(self.stdlib.object().clone())
+    }
+
     pub fn solve_yield(&self, x: &BindingYield, errors: &ErrorCollector) -> YieldResult {
         match x {
-            BindingYield::Yield(annot, x) => {
+            BindingYield::Yield {
+                annot,
+                infer_send,
+                expr: x,
+            } => {
                 // TODO: Keep track of whether the function is async in the binding, decompose hint
                 // appropriately instead of just trying both.
                 let annot = annot
@@ -7853,7 +7864,11 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                     } else {
                         self.heap.mk_none()
                     };
-                    let send_ty = self.heap.mk_any_implicit();
+                    let send_ty = if *infer_send {
+                        self.default_generator_send_type()
+                    } else {
+                        self.heap.mk_any_implicit()
+                    };
                     YieldResult { yield_ty, send_ty }
                 }
             }

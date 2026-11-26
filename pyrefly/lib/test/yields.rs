@@ -20,7 +20,7 @@ f = yielding()
 
 next_f = next(f)
 assert_type(next_f, int)
-assert_type(f, Generator[Literal[1], Any, None])
+assert_type(f, Generator[Literal[1], object, None])
 "#,
 );
 
@@ -34,7 +34,7 @@ def gen_with_return():
     yield 2
     return "done"
 
-assert_type(gen_with_return(), Generator[Literal[1, 2], Any, Literal['done']])
+assert_type(gen_with_return(), Generator[Literal[1, 2], object, Literal['done']])
 "#,
 );
 
@@ -178,7 +178,7 @@ def another_generator():
     yield 2
 
 assert_type(nested_generator(), Generator[Literal[1, 2, 3], Any, None])
-assert_type(another_generator(), Generator[Literal[2], Any, None])
+assert_type(another_generator(), Generator[Literal[2], object, None])
 "#,
 );
 
@@ -284,7 +284,7 @@ from typing import assert_type, Any, Literal, AsyncGenerator
 async def async_count_up_to():
     yield 2
     return 4 # E: Return statement with value is not allowed in async generator
-assert_type(async_count_up_to(), AsyncGenerator[Literal[2], Any])
+assert_type(async_count_up_to(), AsyncGenerator[Literal[2], object])
 "#,
 );
 
@@ -299,7 +299,7 @@ def generator2(x: int):
     yield x
     return generator()
 
-assert_type(generator2(1), Generator[int, Any, Generator[int, None, None]])
+assert_type(generator2(1), Generator[int, object, Generator[int, None, None]])
 "#,
 );
 
@@ -788,22 +788,23 @@ async def f2() -> A | AsyncGenerator[A]:
 
 // https://github.com/pyrefly-org/pyrefly/issues/5757
 testcase!(
-    bug = "Unannotated generator send types are inferred as Unknown",
     test_inferred_generator_send_type_and_contextmanager,
     TestEnv::new()
         .enable_unknown_variable_type_error()
         .enable_partially_unknown_type_error(),
     r#"
 from contextlib import contextmanager
-from typing import reveal_type
+from collections.abc import Generator
+from typing import assert_type
 
 def bare_yield():
-    sent = yield  # E: The type of `sent` is unknown
-    reveal_type(sent)  # E: revealed type: Unknown
+    sent = yield
+    assert_type(sent, object)
 
-reveal_type(bare_yield())  # E: revealed type: Generator[None, Unknown]
+assert_type(bare_yield(), Generator[None, object])
+bare_yield().send("value")
 
-@contextmanager  # E: The type of this argument is partially unknown
+@contextmanager
 def managed():
     yield
 "#,
