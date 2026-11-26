@@ -2757,31 +2757,45 @@ impl Scopes {
         }
     }
 
-    pub fn method_that_sets_attr(&self, x: &ExprAttribute) -> Option<MethodThatSetsAttr> {
+    /// Whether an assignment to `x` in an attribute-defining instance method may initialize a
+    /// `Final` attribute, which it may until every path has initialized it. Assignments in a nested
+    /// function or class are not checked against the method's flow.
+    pub fn may_initialize_final_attr(&self, x: &ExprAttribute) -> bool {
         let Expr::Name(receiver) = &*x.value else {
-            return None;
+            return false;
         };
-        let (method_idx, crossed_method) = self.find_receiver_method_index(&receiver.id)?;
+        let Some((method_idx, crossed_method)) = self.find_receiver_method_index(&receiver.id)
+        else {
+            return false;
+        };
         if crossed_method {
             // Permissions to write Final fields must not cross a nested-method boundary.
-            return None;
+            return false;
         }
-        let ScopeKind::Method(method_scope) = &self.scopes[method_idx].scope.kind else {
+        let scope = &self.scopes[method_idx].scope;
+        let ScopeKind::Method(method_scope) = &scope.kind else {
             unreachable!("`find_receiver_method_index` returns the index of a method scope");
         };
-        for node in self.scopes[..method_idx].iter().rev() {
-            if let ScopeKind::Class(class_scope) = &node.scope.kind {
-                return Some(MethodThatSetsAttr {
-                    method_name: method_scope.name.id.clone(),
-                    recognized_attribute_defining_method: is_attribute_defining_method(
-                        &method_scope.name.id,
-                        &class_scope.name.id,
-                    ),
-                    instance_or_class: method_scope.receiver_kind,
-                });
-            }
-        }
-        None
+        let in_nested_scope = self.scopes.iter().skip(method_idx + 1).any(|node| {
+            matches!(
+                node.scope.kind,
+                ScopeKind::Function(_) | ScopeKind::Method(_) | ScopeKind::Class(_)
+            )
+        });
+        method_scope.receiver_kind == MethodSelfKind::Instance
+            && (in_nested_scope
+                || scope.flow.instance_attribute_initialization.get(&x.attr.id)
+                    != Some(&InitializationStatus::Initialized))
+            && self.scopes[..method_idx]
+                .iter()
+                .rev()
+                .find_map(|node| match &node.scope.kind {
+                    ScopeKind::Class(class_scope) => Some(&class_scope.name.id),
+                    _ => None,
+                })
+                .is_some_and(|class_name| {
+                    is_attribute_defining_method(&method_scope.name.id, class_name)
+                })
     }
 
     pub fn loop_depth(&self) -> usize {
