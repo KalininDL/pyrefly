@@ -1538,6 +1538,13 @@ impl ConfigFile {
             .expect(RESOLVED_SETTING)
     }
 
+    pub fn legacy_generator_send_type(&self, path: &ModulePath) -> bool {
+        self.resolved(path)
+            .settings
+            .legacy_generator_send_type
+            .expect(RESOLVED_SETTING)
+    }
+
     pub fn legacy_overload_expansion(&self, path: &ModulePath) -> bool {
         self.resolved(path)
             .settings
@@ -3151,6 +3158,7 @@ mod tests {
                     recursion_overflow_handler: None,
                     spec_compliant_overloads: None,
                     legacy_overload_expansion: None,
+                    legacy_generator_send_type: None,
                     treat_all_caps_as_final: None,
                     infer_param_types_from_docstring: None,
                 },
@@ -3188,6 +3196,7 @@ mod tests {
                         recursion_overflow_handler: None,
                         spec_compliant_overloads: None,
                         legacy_overload_expansion: None,
+                        legacy_generator_send_type: None,
                         treat_all_caps_as_final: None,
                         infer_param_types_from_docstring: None,
                     }
@@ -4034,6 +4043,7 @@ output-format = "omit-errors"
                 recursion_overflow_handler: None,
                 spec_compliant_overloads: None,
                 legacy_overload_expansion: None,
+                legacy_generator_send_type: None,
                 treat_all_caps_as_final: None,
                 infer_param_types_from_docstring: None,
             },
@@ -5899,6 +5909,7 @@ output-format = "omit-errors"
                 recursion_overflow_handler: None,
                 spec_compliant_overloads: None,
                 legacy_overload_expansion: None,
+                legacy_generator_send_type: None,
                 treat_all_caps_as_final: None,
                 infer_param_types_from_docstring: None,
             },
@@ -5946,6 +5957,7 @@ output-format = "omit-errors"
                 recursion_overflow_handler: None,
                 spec_compliant_overloads: None,
                 legacy_overload_expansion: None,
+                legacy_generator_send_type: None,
                 treat_all_caps_as_final: None,
                 infer_param_types_from_docstring: None,
             },

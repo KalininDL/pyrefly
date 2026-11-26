@@ -698,10 +698,8 @@ impl<'a> BindingsBuilder<'a> {
             })
             .into_boxed_slice();
 
-        let infer_send = return_ann.is_none()
-            && should_infer_return_type
-            && implicit_return.is_some()
-            && yields_and_returns.yield_froms.is_empty();
+        let infer_send =
+            return_ann.is_none() && should_infer_return_type && implicit_return.is_some();
         // Collect the keys of yield expressions.
         let yield_keys = yields_and_returns
             .yields

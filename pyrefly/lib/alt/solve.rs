@@ -4978,13 +4978,8 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
                             .map(|idx| self.get_idx(*idx).yield_ty.clone());
                         yield_tys.chain(yield_from_tys).collect()
                     });
-                    // Do not infer a send type across delegation. A recursive delegate can
-                    // initially appear to accept only `Never` during SCC solving.
-                    let send_ty = if yield_froms.is_empty() {
-                        self.default_generator_send_type()
-                    } else {
-                        self.heap.mk_any_implicit()
-                    };
+                    // The send type is a default, not a type inferred from `yield from` delegates.
+                    let send_ty = self.default_generator_send_type();
                     if x.is_async {
                         self.heap
                             .mk_class_type(self.stdlib.async_generator(yield_ty, send_ty))
@@ -7810,7 +7805,11 @@ impl<'ctx, 'answer, Ans: LookupAnswer> AnswersSolver<'ctx, 'answer, Ans> {
     }
 
     fn default_generator_send_type(&self) -> Type {
-        self.heap.mk_class_type(self.stdlib.object().clone())
+        if self.solver().config.legacy_generator_send_type {
+            self.heap.mk_any_implicit()
+        } else {
+            self.heap.mk_class_type(self.stdlib.object().clone())
+        }
     }
 
     pub fn solve_yield(&self, x: &BindingYield, errors: &ErrorCollector) -> YieldResult {

@@ -177,7 +177,7 @@ def nested_generator():
 def another_generator():
     yield 2
 
-assert_type(nested_generator(), Generator[Literal[1, 2, 3], Any, None])
+assert_type(nested_generator(), Generator[Literal[1, 2, 3], object, None])
 assert_type(another_generator(), Generator[Literal[2], object, None])
 "#,
 );
@@ -788,7 +788,6 @@ async def f2() -> A | AsyncGenerator[A]:
 
 // https://github.com/pyrefly-org/pyrefly/issues/5757
 testcase!(
-    bug = "Delegating generators retain an unknown send type",
     test_delegating_generator_send_type,
     r#"
 from collections.abc import Generator, Iterator
@@ -801,14 +800,14 @@ def delegate() -> Generator[int, str | None]:
 def wrapper():
     yield from delegate()
 
-reveal_type(wrapper())  # E: revealed type: Generator[int, Unknown]
+reveal_type(wrapper())  # E: revealed type: Generator[int, object]
 
 def nested(depth: int):
     yield depth
     if depth:
         yield from nested(depth - 1)
 
-reveal_type(nested(2))  # E: revealed type: Generator[int, Unknown]
+reveal_type(nested(2))  # E: revealed type: Generator[int, object]
 
 def consume() -> Iterator[int]:
     yield from nested(2)
@@ -818,6 +817,31 @@ def annotated() -> Generator[int, str | None]:
     yield from delegate()
 
 assert_type(annotated(), Generator[int, str | None])
+"#,
+);
+
+// https://github.com/pyrefly-org/pyrefly/issues/5757
+testcase!(
+    test_legacy_generator_send_type,
+    TestEnv::new().enable_legacy_generator_send_type(),
+    r#"
+from collections.abc import Generator
+from typing import Literal, assert_type, reveal_type
+
+def receiving():
+    received = yield 1
+    reveal_type(received)  # E: revealed type: Unknown
+
+reveal_type(receiving())  # E: revealed type: Generator[Literal[1], Unknown]
+
+def delegating():
+    yield from receiving()
+
+reveal_type(delegating())  # E: revealed type: Generator[Literal[1], Unknown]
+
+def annotated() -> Generator[int, str]:
+    received = yield 1
+    assert_type(received, str)
 "#,
 );
 

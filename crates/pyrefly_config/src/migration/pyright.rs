@@ -168,6 +168,9 @@ impl PyrightConfig {
 
         // Pyright does not infer empty container types and unsolved type variables based on their first use.
         cfg.root.infer_with_first_use = Some(false);
+        if !self.is_basedpyright {
+            cfg.root.legacy_generator_send_type = Some(true);
+        }
 
         cfg
     }
@@ -876,6 +879,7 @@ mod tests {
                 },
                 root: ConfigBase {
                     infer_with_first_use: Some(false),
+                    legacy_generator_send_type: Some(true),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -925,6 +929,7 @@ mod tests {
                 },
                 root: ConfigBase {
                     infer_with_first_use: Some(false),
+                    legacy_generator_send_type: Some(true),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -962,6 +967,7 @@ executionEnvironments = [
 "#;
         let result = parse_pyproject_toml(src).unwrap().convert();
         assert_eq!(result.root.preset, None);
+        assert_eq!(result.root.legacy_generator_send_type, Some(true));
     }
 
     #[test]
@@ -970,6 +976,7 @@ executionEnvironments = [
 "#;
         let result = parse_pyproject_toml(src).unwrap().convert();
         assert_eq!(result.root.preset, Some(Preset::All));
+        assert_eq!(result.root.legacy_generator_send_type, None);
     }
 
     #[test]

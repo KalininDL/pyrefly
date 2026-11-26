@@ -1918,6 +1918,8 @@ impl<'a> Transaction<'a> {
                     .spec_compliant_overloads(module_data.handle.path()),
                 legacy_overload_expansion: config
                     .legacy_overload_expansion(module_data.handle.path()),
+                legacy_generator_send_type: config
+                    .legacy_generator_send_type(module_data.handle.path()),
                 treat_all_caps_as_final: config.treat_all_caps_as_final(module_data.handle.path()),
                 infer_param_types_from_docstring: config
                     .infer_param_types_from_docstring(module_data.handle.path()),
@@ -3081,6 +3083,7 @@ impl<'a> Transaction<'a> {
                 strict_partial_subtyping: config.strict_partial_subtyping(m.handle.path()),
                 spec_compliant_overloads: config.spec_compliant_overloads(m.handle.path()),
                 legacy_overload_expansion: config.legacy_overload_expansion(m.handle.path()),
+                legacy_generator_send_type: config.legacy_generator_send_type(m.handle.path()),
                 treat_all_caps_as_final: config.treat_all_caps_as_final(m.handle.path()),
                 infer_param_types_from_docstring: config
                     .infer_param_types_from_docstring(m.handle.path()),

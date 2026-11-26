@@ -362,6 +362,10 @@ pub struct ConfigBase {
     ///   are only eligible when `check-unannotated-defs` is true.
     pub infer_return_types: Option<InferReturnTypes>,
 
+    /// Keep inferred generator send types gradual for mypy and Pyright compatibility.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub legacy_generator_send_type: Option<bool>,
+
     /// How class decorators affect the class type. Defaults to `ignore` under the `basic` and
     /// `legacy` presets, and to `typed-only` otherwise.
     pub class_decorator_behavior: Option<ClassDecoratorBehavior>,
@@ -462,6 +466,7 @@ impl ConfigBase {
             replace_untyped_imports_with_any: Some(Vec::new()),
             check_unannotated_defs: Some(true),
             infer_return_types: Some(InferReturnTypes::Checked),
+            legacy_generator_send_type: Some(false),
             class_decorator_behavior: Some(ClassDecoratorBehavior::TypedOnly),
             disable_type_errors_in_ide: Some(false),
             ignore_errors_in_generated_code: Some(false),
@@ -493,6 +498,7 @@ impl ConfigBase {
             untyped_def_behavior,
             check_unannotated_defs,
             infer_return_types,
+            legacy_generator_send_type,
             class_decorator_behavior,
             disable_type_errors_in_ide,
             ignore_errors_in_generated_code,
@@ -528,6 +534,7 @@ impl ConfigBase {
             untyped_def_behavior,
             check_unannotated_defs,
             infer_return_types,
+            legacy_generator_send_type,
             class_decorator_behavior,
             disable_type_errors_in_ide,
             ignore_errors_in_generated_code,

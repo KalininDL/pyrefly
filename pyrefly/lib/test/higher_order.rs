@@ -1501,7 +1501,7 @@ async def consume() -> None:
         assert_type(v, int | str)
 def delegate():
     yield from make_gen(h)
-reveal_type(delegate)  # E: revealed type: () -> Generator[int | str, Unknown]
+reveal_type(delegate)  # E: revealed type: () -> Generator[int | str, object]
     "#,
 );
 

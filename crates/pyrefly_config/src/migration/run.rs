@@ -1043,8 +1043,10 @@ files = ["mypy.py"]
         fs_anyhow::write(&original_config_path, b"[mypy]\nfake_option = True\n")?;
         config_migration(&original_config_path, MigrationSource::Auto, false, false)?;
         let output = fs_anyhow::read_to_string(&pyrefly_config_path)?;
-        // mypy migration uses the `legacy` preset; no redundant explicit settings
-        assert_eq!(output.trim(), "preset = \"legacy\"");
+        assert_eq!(
+            output.trim(),
+            "preset = \"legacy\"\nlegacy-generator-send-type = true"
+        );
         Ok(())
     }
 
@@ -1061,7 +1063,7 @@ files = ["mypy.py"]
         let output = fs_anyhow::read_to_string(&pyrefly_config_path)?;
         assert_eq!(
             output.trim(),
-            "preset = \"legacy\"\nreplace-untyped-imports-with-any = [\"!*\"]"
+            "preset = \"legacy\"\nreplace-untyped-imports-with-any = [\"!*\"]\nlegacy-generator-send-type = true"
         );
         Ok(())
     }
@@ -1120,7 +1122,10 @@ files = ["mypy.py"]
         fs_anyhow::write(&original_config_path, b"{}")?;
         config_migration(&original_config_path, MigrationSource::Auto, false, false)?;
         let output = fs_anyhow::read_to_string(&pyrefly_config_path)?;
-        assert_eq!(output, "infer-with-first-use = false\n");
+        assert_eq!(
+            output,
+            "legacy-generator-send-type = true\ninfer-with-first-use = false\n"
+        );
         Ok(())
     }
 

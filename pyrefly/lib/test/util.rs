@@ -303,6 +303,7 @@ pub struct TestEnv {
     strict_partial_subtyping: bool,
     spec_compliant_overloads: bool,
     legacy_overload_expansion: bool,
+    legacy_generator_send_type: bool,
     treat_all_caps_as_final: bool,
     infer_param_types_from_docstring: bool,
     use_shape_comments_and_stubs: bool,
@@ -397,6 +398,7 @@ impl TestEnv {
             strict_partial_subtyping: false,
             spec_compliant_overloads: false,
             legacy_overload_expansion: false,
+            legacy_generator_send_type: false,
             treat_all_caps_as_final: false,
             infer_param_types_from_docstring: false,
             use_shape_comments_and_stubs: true,
@@ -750,6 +752,11 @@ impl TestEnv {
         self
     }
 
+    pub fn enable_legacy_generator_send_type(mut self) -> Self {
+        self.legacy_generator_send_type = true;
+        self
+    }
+
     pub fn enable_legacy_overload_expansion(mut self) -> Self {
         self.legacy_overload_expansion = true;
         self
@@ -984,6 +991,7 @@ impl TestEnv {
         config.root.strict_partial_subtyping = Some(self.strict_partial_subtyping);
         config.root.spec_compliant_overloads = Some(self.spec_compliant_overloads);
         config.root.legacy_overload_expansion = Some(self.legacy_overload_expansion);
+        config.root.legacy_generator_send_type = Some(self.legacy_generator_send_type);
         config.root.treat_all_caps_as_final = Some(self.treat_all_caps_as_final);
         config.root.infer_param_types_from_docstring = Some(self.infer_param_types_from_docstring);
         config.use_shape_comments_and_stubs = Some(self.use_shape_comments_and_stubs);
