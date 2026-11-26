@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use crate::test::util::TestEnv;
 use crate::testcase;
 
 testcase!(
@@ -783,4 +784,27 @@ async def f1() -> A | AsyncGenerator[A]:
 async def f2() -> A | AsyncGenerator[A]:
     yield A()
     "#,
+);
+
+// https://github.com/pyrefly-org/pyrefly/issues/5757
+testcase!(
+    bug = "Unannotated generator send types are inferred as Unknown",
+    test_inferred_generator_send_type_and_contextmanager,
+    TestEnv::new()
+        .enable_unknown_variable_type_error()
+        .enable_partially_unknown_type_error(),
+    r#"
+from contextlib import contextmanager
+from typing import reveal_type
+
+def bare_yield():
+    sent = yield  # E: The type of `sent` is unknown
+    reveal_type(sent)  # E: revealed type: Unknown
+
+reveal_type(bare_yield())  # E: revealed type: Generator[None, Unknown]
+
+@contextmanager  # E: The type of this argument is partially unknown
+def managed():
+    yield
+"#,
 );
